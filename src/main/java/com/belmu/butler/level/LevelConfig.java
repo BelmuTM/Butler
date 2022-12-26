@@ -1,13 +1,10 @@
 package com.belmu.butler.level;
 
 import com.belmu.butler.Butler;
-import com.belmu.butler.DataManager;
+import com.belmu.butler.DataParser;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
@@ -15,7 +12,7 @@ import java.util.Map;
 public class LevelConfig {
 
     private static final String levelsPath = Butler.dataPath + "levels.json";
-    private static final JSONObject levels = (JSONObject) DataManager.readJSON(levelsPath);
+    private static final JSONObject levels = (JSONObject) DataParser.readJSON(levelsPath);
 
     public static Map<String, Double> xpMap = new HashMap<>();
     public static Map<String, Double> levelMap = new HashMap<>();
@@ -53,11 +50,7 @@ public class LevelConfig {
         root.put("xp", objectXp);
         root.put("level", objectLevel);
 
-        try {
-            Files.write(Paths.get(levelsPath), root.toJSONString().getBytes());
-        } catch(IOException ioe) {
-            ioe.printStackTrace();
-        }
+        DataParser.writeJSON(levelsPath, root);
     }
 
     public static void retrieveBackup() {
@@ -86,7 +79,7 @@ public class LevelConfig {
         LevelConfig.xpMap.entrySet()
                 .stream()
                 .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
-                .forEachOrdered(x -> LevelUtils.sortedRanking.put(x.getKey(), x.getValue()));
+                .forEachOrdered(x -> Levels.sortedRanking.put(x.getKey(), x.getValue()));
 
         System.out.println("[INFO] Retrieved levels backup in " + (System.currentTimeMillis() - processStart) + "ms.");
     }

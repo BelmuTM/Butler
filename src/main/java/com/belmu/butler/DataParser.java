@@ -7,14 +7,11 @@ import java.io.FileReader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
-public class DataManager {
+public class DataParser {
 
-    public static void writeJSON(String path, String object, String value) {
+    public static void writeJSON(String path, JSONObject object) {
         try {
-            JSONObject sampleObject = new JSONObject();
-            sampleObject.put(object, value);
-
-            Files.write(Paths.get(path), sampleObject.toJSONString().getBytes());
+            Files.write(Paths.get(path), object.toJSONString().getBytes());
         } catch (Exception ex) {
             ex.printStackTrace();
         }

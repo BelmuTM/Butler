@@ -1,13 +1,10 @@
 package com.belmu.butler;
 
-import com.belmu.butler.commands.Calc;
-import com.belmu.butler.commands.Ping;
-import com.belmu.butler.commands.Rank;
-import com.belmu.butler.commands.Top;
-import com.belmu.butler.commands.admin.SetLevel;
+import com.belmu.butler.commands.*;
+import com.belmu.butler.commands.admin.*;
+import com.belmu.butler.commands.music.*;
 import com.belmu.butler.level.GainExpEvent;
 import com.belmu.butler.level.LevelConfig;
-import com.belmu.butler.level.LevelUpEvent;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.OnlineStatus;
@@ -33,28 +30,34 @@ public class Butler extends ListenerAdapter {
     public static final TimeUnit unit = TimeUnit.SECONDS;
 
     public static final int darkGray = 0x474747;
+    public static final int gold     = 0xfcba03;
 
     public static Object[] listeners = new Object[] {
             // Events
             new Butler(),
             new GainExpEvent(),
-            new LevelUpEvent(),
 
             // Admin commands
-            new SetLevel(),
+            new SetLevelCommand(),
 
             // Misc commands
-            new Ping(),
-            new Calc(),
-            new Rank(),
-            new Top()
+            new PingCommand(),
+            new CalcCommand(),
+            new RankCommand(),
+            new TopCommand(),
+
+            // Music commands
+            new StopCommand(),
+            new PlayCommand(),
+            new SkipCommand(),
+            new QueueCommand()
     };
 
     public static JDA jda;
 
     public static void main(String[] args) throws InterruptedException {
         JDABuilder builder = JDABuilder
-                .create(Token.token, GatewayIntent.GUILD_MEMBERS)
+                .create(Token.token, GatewayIntent.GUILD_MEMBERS, GatewayIntent.GUILD_VOICE_STATES, GatewayIntent.GUILD_MESSAGES, GatewayIntent.MESSAGE_CONTENT)
                 .setMemberCachePolicy(MemberCachePolicy.ALL);
 
         builder.setStatus(OnlineStatus.ONLINE);

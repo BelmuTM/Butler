@@ -1,13 +1,12 @@
 package com.belmu.butler.level;
 
-import com.belmu.butler.Butler;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.User;
 
 import java.util.*;
 
-public class LevelUtils {
+public class Levels {
 
     public static LinkedHashMap<String, Double> sortedRanking = new LinkedHashMap<>();
 
@@ -57,7 +56,7 @@ public class LevelUtils {
         return level;
     }
 
-    public static boolean hasPassedALevel(User user) {
+    public static boolean hasPassedLevel(User user) {
         double nextLevel = getLevel(user) + 1D;
         return getXp(user) >= calcXpForLevel(nextLevel);
     }

@@ -1,7 +1,7 @@
 package com.belmu.butler.commands;
 
 import com.belmu.butler.Butler;
-import com.belmu.butler.level.LevelUtils;
+import com.belmu.butler.level.Levels;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.User;
@@ -10,16 +10,15 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
-import net.dv8tion.jda.api.interactions.components.buttons.Button;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;
 import java.util.*;
 
-public class Top extends ListenerAdapter {
+public class TopCommand extends ListenerAdapter {
 
     public String cmdName = "top";
-    public String cmdDescription = "Displays XP leaderboard";
+    public String cmdDescription = "Displays the EXP leaderboard";
 
     public static OptionData[] options = new OptionData[] {
             new OptionData(OptionType.STRING, "type", "The desired type of leaderboard", true)
@@ -31,8 +30,7 @@ public class Top extends ListenerAdapter {
     @Override
     public void onSlashCommandInteraction(@NotNull SlashCommandInteractionEvent event) {
         String cmd = event.getName();
-        Member member = event.getMember();
-        User user = member.getUser();
+        User user = event.getMember().getUser();
 
         if(cmd.equals(cmdName)) {
             event.deferReply().queue();
@@ -40,8 +38,8 @@ public class Top extends ListenerAdapter {
             OptionMapping type = event.getOption("type");
 
             List keys = switch (type.getAsString().toLowerCase()) {
-                case "global" -> new ArrayList(LevelUtils.sortedRanking.keySet());
-                case "server" -> new ArrayList(LevelUtils.getGuildSortedRanking(event.getGuild()).keySet());
+                case "global" -> new ArrayList(Levels.sortedRanking.keySet());
+                case "server" -> new ArrayList(Levels.getGuildSortedRanking(event.getGuild()).keySet());
                 default -> null;
             };
 
@@ -71,11 +69,11 @@ public class Top extends ListenerAdapter {
 
                     if (!user.isBot()) {
                         name = u.getName();
-                        text = prefix + "%`" + name + "`%" + "[`" + LevelUtils.getXp(u).intValue() + "`]";
+                        text = prefix + "%`" + name + "`%" + "[`" + Levels.getXp(u).intValue() + "`]";
                     } else {
                         keys.remove(i);
                     }
-                } catch (IndexOutOfBoundsException ioobe) {
+                } catch (IndexOutOfBoundsException | NullPointerException exc) {
                     text = prefix + "%`" + name + "`%" + "[`N/A`]";
                 }
                 leaderboard.append(text.replaceAll("%", addBlank((maxLineLength - name.length()) / 2))).append("\n");
@@ -83,29 +81,26 @@ public class Top extends ListenerAdapter {
 
             String rank = "N/A";
             try {
-                rank = "#" + LevelUtils.getRank(user, keys);
+                rank = "#" + Levels.getRank(user, keys);
             } catch(NullPointerException ignored) {}
 
-            String level = String.valueOf(LevelUtils.getLevel(user).intValue());
-            int xp = LevelUtils.getXp(user).intValue();
+            String level = String.valueOf(Levels.getLevel(user).intValue());
+            int xp = Levels.getXp(user).intValue();
 
-            EmbedBuilder l = new EmbedBuilder();
+            EmbedBuilder lb = new EmbedBuilder();
 
-            l.setColor(Objects.requireNonNull(event.getGuild().getMemberById(event.getJDA().getSelfUser().getId())).getColor());
-            l.setTitle(":trophy: **" + type.getAsString() + " EXP Leaderboard**");
+            lb.setColor(event.getGuild().getSelfMember().getColor());
+            lb.setTitle(":trophy: **" + type.getAsString() + " EXP Leaderboard**");
 
-            l.addField("Ranking", leaderboard.toString(), false);
+            lb.addField("Ranking", leaderboard.toString(), false);
+            lb.addField(":small_orange_diamond: " + type.getAsString() + " Rank", rank, true);
+            lb.addField(":small_orange_diamond: Level", level, true);
+            lb.addField(":small_orange_diamond: Total EXP", String.valueOf(xp), true);
 
-            l.addField(":small_orange_diamond: " + type.getAsString() + " Rank", rank, true);
-            l.addField(":small_orange_diamond: Level", level, true);
-            l.addField(":small_orange_diamond: Total EXP", String.valueOf(xp), true);
+            lb.setFooter("Requested by " + user.getName(), user.getAvatarUrl());
+            lb.setTimestamp(Instant.now());
 
-            l.setImage("https://cdn.discordapp.com/attachments/736608562490376202/1049084436295188530/bot_level_card.png");
-
-            l.setFooter("Requested by " + user.getAsTag(), user.getAvatarUrl());
-            l.setTimestamp(Instant.now());
-
-            event.getHook().sendMessageEmbeds(l.build()).queue();
+            event.getHook().sendMessageEmbeds(lb.build()).queue();
         }
     }
 

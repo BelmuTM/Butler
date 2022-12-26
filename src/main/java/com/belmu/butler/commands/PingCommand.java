@@ -6,10 +6,10 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.TimeUnit;
 
-public class Ping extends ListenerAdapter {
+public class PingCommand extends ListenerAdapter {
 
     public String cmdName = "ping";
-    public String cmdDescription = "Gives you the bot's latency in milliseconds (ms)";
+    public String cmdDescription = "Checks Butler's response time in milliseconds (ms)";
 
     @Override
     public void onSlashCommandInteraction(@NotNull SlashCommandInteractionEvent event) {
