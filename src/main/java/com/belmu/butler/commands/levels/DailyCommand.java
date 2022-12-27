@@ -10,12 +10,20 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.jetbrains.annotations.NotNull;
 import org.json.simple.JSONObject;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.concurrent.TimeUnit;
+
 public class DailyCommand extends ListenerAdapter {
 
     public String cmdName = "daily";
     public String cmdDescription = "Claims your daily EXP (50xp/day)";
 
     private final long dayMs = 86400000; // 24 hours in milliseconds
+
+    private final SimpleDateFormat hourFormat   = new SimpleDateFormat("HH");
+    private final SimpleDateFormat minuteFormat = new SimpleDateFormat("mm");
+    private final SimpleDateFormat secondFormat = new SimpleDateFormat("ss");
 
     @Override
     public void onSlashCommandInteraction(@NotNull SlashCommandInteractionEvent event) {
@@ -30,11 +38,20 @@ public class DailyCommand extends ListenerAdapter {
             if (!dailyObject.toString().isEmpty()) {
                 JSONObject userDailies = (JSONObject) dailyObject;
 
-                if(Long.parseLong(userDailies.get(user.getId()).toString()) > System.currentTimeMillis()) {
+                long timestamp = Long.parseLong(userDailies.get(user.getId()).toString());
+                long timeLeft  = timestamp - System.currentTimeMillis();
+
+                if(timeLeft > 0) {
+                    long hours   = TimeUnit.MILLISECONDS.toHours(timeLeft);
+                    long minutes = TimeUnit.MILLISECONDS.toMinutes(timeLeft) % 60;
+                    long seconds = TimeUnit.MILLISECONDS.toSeconds(timeLeft) % 60;
+
+                    String formattedTimeLeft = String.format("%02dh %02dm %02ds", hours, minutes, seconds);
+
                     final EmbedBuilder alreadyClaimed = new EmbedBuilder()
                             .setColor(Butler.red)
                             .setDescription("⌛ You've already claimed your dailies!")
-                            .setFooter("Come back after 12PM UTC");
+                            .setFooter("Come back in " + formattedTimeLeft + ".");
                     event.getHook().sendMessageEmbeds(alreadyClaimed.build()).queue();
                     return;
                 }
@@ -51,7 +68,7 @@ public class DailyCommand extends ListenerAdapter {
             final EmbedBuilder dailies = new EmbedBuilder()
                     .setColor(Butler.green)
                     .setDescription("\uD83D\uDCB0 Claimed Dailies! | **+50 xp**")
-                    .setFooter("Dailies reset at 12PM UTC");
+                    .setFooter("Dailies reset after 24 hours.");
             event.getHook().sendMessageEmbeds(dailies.build()).queue();
         }
     }
