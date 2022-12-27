@@ -37,7 +37,7 @@ public class PlayCommand extends ListenerAdapter {
             if (!memberVoiceState.inAudioChannel()) {
                 event.deferReply(true).queue();
 
-                EmbedBuilder a = new EmbedBuilder()
+                final EmbedBuilder a = new EmbedBuilder()
                         .setColor(Butler.darkGray)
                         .setDescription("Please join a channel first.");
                 CooldownMessages.reply(event, a.build());

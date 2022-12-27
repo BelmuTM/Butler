@@ -129,4 +129,8 @@ public class PlayerManager {
     public final EmbedBuilder notPlaying = new EmbedBuilder()
             .setColor(Butler.darkGray)
             .setDescription(":gear: There is no track playing.");
+
+    public final EmbedBuilder alreadyVoted = new EmbedBuilder()
+            .setColor(Butler.darkGray)
+            .setDescription(":gear: You've already voted to stop the music.");
 }

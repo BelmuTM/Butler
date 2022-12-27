@@ -39,7 +39,7 @@ public class QueueCommand extends ListenerAdapter {
             AudioTrack playing = guildMusicManager.audioPlayer.getPlayingTrack();
             String duration    = new SimpleDateFormat("mm:ss").format(playing.getDuration());
 
-            EmbedBuilder queue = new EmbedBuilder()
+            final EmbedBuilder queue = new EmbedBuilder()
                     .setColor(event.getGuild().getSelfMember().getColor())
                     .setFooter("Requested by " + member.getEffectiveName(), member.getUser().getAvatarUrl())
                     .setTimestamp(Instant.now());

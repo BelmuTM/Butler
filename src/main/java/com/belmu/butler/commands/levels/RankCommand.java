@@ -1,4 +1,4 @@
-package com.belmu.butler.commands;
+package com.belmu.butler.commands.levels;
 
 import com.belmu.butler.Butler;
 import com.belmu.butler.level.Levels;

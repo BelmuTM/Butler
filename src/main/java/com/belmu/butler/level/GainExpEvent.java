@@ -24,7 +24,6 @@ public class GainExpEvent extends ListenerAdapter {
         User user = event.getMember().getUser();
         if(user.isBot()) return;
 
-        LevelConfig.backupLevels();
         long currentTimeMillis = System.currentTimeMillis();
 
         if (cooldown.containsKey(user)) {
@@ -46,6 +45,8 @@ public class GainExpEvent extends ListenerAdapter {
                     .setThumbnail(user.getAvatarUrl());
             event.getChannel().sendMessageEmbeds(levelUp.build()).queue();
         }
+
+        LevelConfig.backupLevels();
     }
 
     public static double round(double value, int places) {

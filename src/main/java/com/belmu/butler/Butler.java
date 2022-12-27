@@ -2,6 +2,10 @@ package com.belmu.butler;
 
 import com.belmu.butler.commands.*;
 import com.belmu.butler.commands.admin.*;
+import com.belmu.butler.commands.levels.CalcCommand;
+import com.belmu.butler.commands.levels.DailyCommand;
+import com.belmu.butler.commands.levels.RankCommand;
+import com.belmu.butler.commands.levels.TopCommand;
 import com.belmu.butler.commands.music.*;
 import com.belmu.butler.level.GainExpEvent;
 import com.belmu.butler.level.LevelConfig;
@@ -18,19 +22,23 @@ import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.utils.MemberCachePolicy;
 import org.jetbrains.annotations.NotNull;
+import org.json.simple.JSONObject;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 public class Butler extends ListenerAdapter {
 
-    public static final String dataPath = "src/main/java/com/belmu/butler/data/";
+    public static final String dataPath = "src/main/java/com/belmu/butler/data/data.json";
+    public static JSONObject data = (JSONObject) DataParser.readJSON(dataPath);
 
     public static final int deleteTime = 25;
     public static final TimeUnit unit = TimeUnit.SECONDS;
 
     public static final int darkGray = 0x474747;
     public static final int gold     = 0xfcba03;
+    public static final int green    = 0x75cf21;
+    public static final int red      = 0xde381b;
 
     public static Object[] listeners = new Object[] {
             // Events
@@ -40,11 +48,14 @@ public class Butler extends ListenerAdapter {
             // Admin commands
             new SetLevelCommand(),
 
-            // Misc commands
-            new PingCommand(),
+            // Levels commands
             new CalcCommand(),
+            new DailyCommand(),
             new RankCommand(),
             new TopCommand(),
+
+            // Misc commands
+            new PingCommand(),
 
             // Music commands
             new StopCommand(),
@@ -70,6 +81,13 @@ public class Butler extends ListenerAdapter {
 
     @Override
     public void onReady(@NotNull ReadyEvent event) {
+        JSONObject out = data == null ? new JSONObject() : data;
+        out.putIfAbsent("level", "");
+        out.putIfAbsent("xp"   , "");
+        out.putIfAbsent("daily", "");
+        data = out;
+        DataParser.writeJSON(dataPath, out);
+
         LevelConfig.retrieveBackup();
 
         Timer timer = new Timer();

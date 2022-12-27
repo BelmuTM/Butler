@@ -11,20 +11,15 @@ import java.util.Map;
 
 public class LevelConfig {
 
-    private static final String levelsPath = Butler.dataPath + "levels.json";
-    private static final JSONObject levels = (JSONObject) DataParser.readJSON(levelsPath);
-
     public static Map<String, Double> xpMap = new HashMap<>();
     public static Map<String, Double> levelMap = new HashMap<>();
 
     public static void backupLevels() {
-        JSONObject root = new JSONObject();
+        final JSONArray xp = new JSONArray();
+        final JSONArray level = new JSONArray();
 
-        JSONArray xp = new JSONArray();
-        JSONArray level = new JSONArray();
-
-        JSONObject objectXp = new JSONObject();
-        JSONObject objectLevel = new JSONObject();
+        final JSONObject objectXp = new JSONObject();
+        final JSONObject objectLevel = new JSONObject();
 
         for (Map.Entry<String, Double> entry : xpMap.entrySet()) {
             String key = entry.getKey();
@@ -47,33 +42,41 @@ public class LevelConfig {
         xp.add(objectXp);
         level.add(objectLevel);
 
-        root.put("xp", objectXp);
-        root.put("level", objectLevel);
+        Butler.data.put("xp", objectXp);
+        Butler.data.put("level", objectLevel);
 
-        DataParser.writeJSON(levelsPath, root);
+        DataParser.writeJSON(Butler.dataPath, Butler.data);
     }
 
     public static void retrieveBackup() {
         long processStart = System.currentTimeMillis();
-        JSONObject backupXp = (JSONObject) levels.get("xp");
-        JSONObject backupLevel = (JSONObject) levels.get("level");
+        final Object xpObject = Butler.data.get("xp");
+        final Object levelObject = Butler.data.get("level");
 
-        for(Object key : backupXp.keySet()) {
-            String backupValue = backupXp.get(key).toString();
+        if(!xpObject.toString().isEmpty()) {
+            JSONObject backupXp = (JSONObject) xpObject;
 
-            String id = key.toString();
-            Double value = Double.parseDouble(backupValue);
+            for (Object key : backupXp.keySet()) {
+                String backupValue = backupXp.get(key).toString();
 
-            xpMap.put(id, value);
+                String id = key.toString();
+                Double value = Double.parseDouble(backupValue);
+
+                xpMap.put(id, value);
+            }
         }
 
-        for(Object key : backupLevel.keySet()) {
-            String backupValue = backupLevel.get(key).toString();
+        if(!levelObject.toString().isEmpty()) {
+            JSONObject backupLevel = (JSONObject) levelObject;
 
-            String id = key.toString();
-            Double value = Double.parseDouble(backupValue);
+            for (Object key : backupLevel.keySet()) {
+                String backupValue = backupLevel.get(key).toString();
 
-            levelMap.put(id, value);
+                String id = key.toString();
+                Double value = Double.parseDouble(backupValue);
+
+                levelMap.put(id, value);
+            }
         }
 
         LevelConfig.xpMap.entrySet()
