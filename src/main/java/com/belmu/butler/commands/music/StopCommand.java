@@ -6,10 +6,7 @@ import com.belmu.butler.lavaplayer.PlayerManager;
 import com.belmu.butler.utility.CooldownMessages;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.MessageEmbed;
+import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.channel.unions.AudioChannelUnion;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
@@ -59,7 +56,7 @@ public class StopCommand extends ListenerAdapter {
                 event.deferReply().queue();
                 List<Member> votes = new ArrayList<>(); votes.add(member);
 
-                event.getHook().sendMessageEmbeds(getVoteMessage(guild, member, votes.size()))
+                event.getHook().sendMessageEmbeds(getVoteMessage(guild, member.getUser(), votes.size()))
                         .addActionRow(Button.of(ButtonStyle.DANGER, "stop-music", "Vote"))
                         .queue(msg -> stopVotes.put(msg, votes));
                 return;
@@ -71,14 +68,14 @@ public class StopCommand extends ListenerAdapter {
         }
     }
 
-    private MessageEmbed getVoteMessage(Guild guild, Member member, int votes) {
+    private MessageEmbed getVoteMessage(Guild guild, User user, int votes) {
         AudioTrack playing = PlayerManager.getInstance().getMusicManager(guild).audioPlayer.getPlayingTrack();
         String duration    = new SimpleDateFormat("mm:ss").format(playing.getDuration());
         String nowPlaying  = "[NOW PLAYING] " + playing.getInfo().author + " » \"" + playing.getInfo().title + "\" [" + duration + "]";
 
         final EmbedBuilder vote = new EmbedBuilder()
                 .setColor(guild.getSelfMember().getColor())
-                .setDescription("\uD83D\uDD07 " + member.getAsMention() + " wants to stop the music. **[" + votes + "/" + minStopVotes + " votes]**")
+                .setDescription("\uD83D\uDD07 " + user.getAsMention() + " wants to stop the music. **[" + votes + "/" + minStopVotes + " votes]**")
                 .setFooter(nowPlaying);
         return vote.build();
     }
@@ -113,7 +110,7 @@ public class StopCommand extends ListenerAdapter {
             stopVotes.put(message, votes);
 
             Guild guild = event.getGuild();
-            event.getInteraction().getMessage().editMessageEmbeds(getVoteMessage(guild, member, votes.size())).queue();
+            event.getInteraction().getMessage().editMessageEmbeds(getVoteMessage(guild, message.getAuthor(), votes.size())).queue();
 
             event.getHook().sendMessage(":small_orange_diamond: | " + member.getAsMention() + " voted to stop the music.").queue();
 

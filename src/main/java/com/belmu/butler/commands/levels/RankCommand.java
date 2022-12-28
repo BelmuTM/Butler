@@ -63,7 +63,19 @@ public class RankCommand extends ListenerAdapter {
             String level = String.valueOf(lvl);
             String nextLevel = String.valueOf(lvl + 1);
 
-            int xp = Levels.getXp(user).intValue();
+            Double xpDouble = Levels.getXp(user);
+            int xp = xpDouble.intValue();
+
+            Double currentXp = (Levels.calcXpForLevel(lvl) - Levels.getXp(user)) - (Levels.calcXpForLevel(lvl) - xpDouble) * 2;
+            Double xpForNext = Levels.calcXpForLevel(nextLvl) - Levels.calcXpForLevel(lvl);
+
+            Double percentage = calculatePercentage(currentXp, xpForNext);
+            double tenth = percentage * 0.1;
+
+            StringBuilder bar = new StringBuilder();
+            for (double i = 0; i < 10; i++) {
+                bar.append(i < tenth ? ":green_square:" : ":white_large_square:").append(" ");
+            }
 
             final EmbedBuilder rank = new EmbedBuilder();
 
@@ -77,17 +89,6 @@ public class RankCommand extends ListenerAdapter {
             rank.setThumbnail(user.getAvatarUrl());
             rank.setFooter("Requested by " + member.getEffectiveName(), member.getUser().getAvatarUrl());
             rank.setTimestamp(Instant.now());
-
-            Double currentXp = (Levels.calcXpForLevel(lvl) - Levels.getXp(user)) - (Levels.calcXpForLevel(lvl) - Levels.getXp(user)) * 2;
-            Double xpForNext = Levels.calcXpForLevel(nextLvl) - Levels.calcXpForLevel(lvl);
-
-            Double percentage = calculatePercentage(currentXp, xpForNext);
-            double tenth = percentage * 0.1;
-
-            StringBuilder bar = new StringBuilder();
-            for (double i = 0; i < 10; i++) {
-                bar.append(i <= tenth ? ":green_square:" : ":white_large_square:").append(" ");
-            }
 
             rank.addField("Progress", "`[" + level + "]` " + bar.toString().trim() + " `[" + nextLevel + "]` " + "**" + percentage.intValue() + "%**" + " *(" + currentXp.intValue() + "/" + xpForNext.intValue() + ")*", false);
 
