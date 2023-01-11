@@ -15,6 +15,7 @@ public class LevelConfig {
     public static Map<String, Double> levelMap = new HashMap<>();
 
     public static void backupLevels() {
+
         final JSONArray xp = new JSONArray();
         final JSONArray level = new JSONArray();
 

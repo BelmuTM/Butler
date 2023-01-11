@@ -1,5 +1,6 @@
 package com.belmu.butler.level;
 
+import com.belmu.butler.Butler;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.User;
@@ -46,7 +47,7 @@ public class GainExpEvent extends ListenerAdapter {
             event.getChannel().sendMessageEmbeds(levelUp.build()).queue();
         }
 
-        LevelConfig.backupLevels();
+        if(Butler.ready) LevelConfig.backupLevels();
     }
 
     public static double round(double value, int places) {

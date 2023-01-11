@@ -31,6 +31,7 @@ public class Butler extends ListenerAdapter {
 
     public static final String dataPath = "src/main/java/com/belmu/butler/data/data.json";
     public static JSONObject data = (JSONObject) DataParser.readJSON(dataPath);
+    public static boolean ready = false;
 
     public static final int deleteTime = 25;
     public static final TimeUnit unit = TimeUnit.SECONDS;
@@ -47,6 +48,7 @@ public class Butler extends ListenerAdapter {
 
             // Admin commands
             new SetLevelCommand(),
+            new DebugCommand(),
 
             // Levels commands
             new CalcCommand(),
@@ -98,6 +100,8 @@ public class Butler extends ListenerAdapter {
                 System.out.println("[INFO] Saved levels backup on " + new java.util.Date());
             }
         }, 0L, 600000L); // 10 minutes
+
+        ready = true;
     }
 
     @Override

@@ -20,10 +20,6 @@ public class DailyCommand extends ListenerAdapter {
 
     private final long dayMs = 86400000; // 24 hours in milliseconds
 
-    private final SimpleDateFormat hourFormat   = new SimpleDateFormat("HH");
-    private final SimpleDateFormat minuteFormat = new SimpleDateFormat("mm");
-    private final SimpleDateFormat secondFormat = new SimpleDateFormat("ss");
-
     @Override
     public void onSlashCommandInteraction(@NotNull SlashCommandInteractionEvent event) {
         String cmd = event.getName();
