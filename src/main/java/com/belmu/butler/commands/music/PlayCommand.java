@@ -2,14 +2,8 @@
 package com.belmu.butler.commands.music;
 
 import com.belmu.butler.Butler;
-import com.belmu.butler.lavaplayer.GuildMusicManager;
 import com.belmu.butler.lavaplayer.PlayerManager;
 import com.belmu.butler.utility.CooldownMessages;
-import com.sedmelluq.discord.lavaplayer.player.AudioLoadResultHandler;
-import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager;
-import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
-import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
-import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
@@ -28,9 +22,7 @@ import se.michaelthelin.spotify.requests.data.tracks.GetTrackRequest;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.text.SimpleDateFormat;
 import java.time.Instant;
-import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 public class PlayCommand extends ListenerAdapter {

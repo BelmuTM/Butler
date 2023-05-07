@@ -10,7 +10,6 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.jetbrains.annotations.NotNull;
 import org.json.simple.JSONObject;
 
-import java.text.SimpleDateFormat;
 import java.util.concurrent.TimeUnit;
 
 public class DailyCommand extends ListenerAdapter {
