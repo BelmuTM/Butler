@@ -21,9 +21,15 @@ import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.utils.MemberCachePolicy;
+import org.apache.hc.core5.http.ParseException;
 import org.jetbrains.annotations.NotNull;
 import org.json.simple.JSONObject;
+import se.michaelthelin.spotify.SpotifyApi;
+import se.michaelthelin.spotify.exceptions.SpotifyWebApiException;
+import se.michaelthelin.spotify.model_objects.credentials.ClientCredentials;
+import se.michaelthelin.spotify.requests.authorization.client_credentials.ClientCredentialsRequest;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -67,10 +73,25 @@ public class Butler extends ListenerAdapter {
     };
 
     public static JDA jda;
+    public static SpotifyApi spotifyApi = new SpotifyApi.Builder()
+            .setClientId(Credentials.spotifyClientId)
+            .setClientSecret(Credentials.spotifyClientSecret)
+            .build();
+
+    private static final ClientCredentialsRequest clientCredentialsRequest = spotifyApi.clientCredentials().build();
+
+    public static void clientCredentialsSync() {
+        try {
+            final ClientCredentials clientCredentials = clientCredentialsRequest.execute();
+            spotifyApi.setAccessToken(clientCredentials.getAccessToken());
+        } catch (IOException | SpotifyWebApiException | ParseException e) {
+            e.printStackTrace();
+        }
+    }
 
     public static void main(String[] args) throws InterruptedException {
         JDABuilder builder = JDABuilder
-                .create(Token.token, GatewayIntent.GUILD_MEMBERS, GatewayIntent.GUILD_VOICE_STATES, GatewayIntent.GUILD_MESSAGES, GatewayIntent.MESSAGE_CONTENT)
+                .create(Credentials.token, GatewayIntent.GUILD_MEMBERS, GatewayIntent.GUILD_VOICE_STATES, GatewayIntent.GUILD_MESSAGES, GatewayIntent.MESSAGE_CONTENT)
                 .setMemberCachePolicy(MemberCachePolicy.ALL);
 
         builder.setStatus(OnlineStatus.ONLINE);
@@ -79,6 +100,8 @@ public class Butler extends ListenerAdapter {
         jda = builder.build();
         jda.addEventListener(listeners);
         jda.awaitReady();
+
+        clientCredentialsSync();
     }
 
     @Override

@@ -19,6 +19,8 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 public class PlayerManager {
 
@@ -49,7 +51,7 @@ public class PlayerManager {
     }
 
     public void loadAndPlay(SlashCommandInteractionEvent event, String url) {
-        GuildMusicManager musicManager = getMusicManager(event.getGuild());
+        GuildMusicManager musicManager = getMusicManager(Objects.requireNonNull(event.getGuild()));
 
         audioPlayerManager.loadItemOrdered(musicManager, url, new AudioLoadResultHandler() {
 
@@ -57,10 +59,18 @@ public class PlayerManager {
             public void trackLoaded(AudioTrack track) {
                 User user = event.getUser();
 
+                long duration = track.getDuration();
+
+                long hours   = TimeUnit.MILLISECONDS.toHours(duration);
+                long minutes = TimeUnit.MILLISECONDS.toMinutes(duration) % 60;
+                long seconds = TimeUnit.MILLISECONDS.toSeconds(duration) % 60;
+
+                String formattedDuration = String.format("%02d:%02d:%02d", hours, minutes, seconds);
+
                 final EmbedBuilder trackLoaded = new EmbedBuilder()
                         .setColor(Butler.gold)
                         .setDescription("\uD83D\uDCE5 **Added** `" + track.getInfo().title + "` to the queue")
-                        .addField("Duration", new SimpleDateFormat("mm:ss").format(track.getDuration()), true)
+                        .addField("Duration", formattedDuration, true)
                         .addField("Author", track.getInfo().author, true)
                         .addField("Source", "[Link](" + track.getInfo().uri + ")", true)
                         .setFooter("Requested by " + user.getName(), user.getAvatarUrl())
@@ -88,10 +98,16 @@ public class PlayerManager {
 
                 User user = event.getUser();
 
+                long hours   = TimeUnit.MILLISECONDS.toHours(totalDuration);
+                long minutes = TimeUnit.MILLISECONDS.toMinutes(totalDuration) % 60;
+                long seconds = TimeUnit.MILLISECONDS.toSeconds(totalDuration) % 60;
+
+                String formattedDuration = String.format("%02d:%02d:%02d", hours, minutes, seconds);
+
                 final EmbedBuilder playlistLoaded = new EmbedBuilder()
                         .setColor(Butler.gold)
                         .setDescription("\uD83D\uDCE5 **Added** `" + playlist.getName() + "` [" + playlist.getTracks().size() + " songs] to the queue")
-                        .addField("Total Duration", new SimpleDateFormat("mm:ss").format(totalDuration), true)
+                        .addField("Total Duration", formattedDuration, true)
                         .addField("Source", "[Link](" + url + ")", true)
                         .setFooter("Requested by " + user.getName(), user.getAvatarUrl())
                         .setTimestamp(Instant.now());
@@ -113,6 +129,34 @@ public class PlayerManager {
                         .setDescription(":gear: **Error:** " + exception.getMessage());
                 CooldownMessages.reply(event, failed.build());
             }
+        });
+    }
+
+    public void silentLoadAndPlay(SlashCommandInteractionEvent event, String url) {
+        GuildMusicManager musicManager = getMusicManager(Objects.requireNonNull(event.getGuild()));
+
+        audioPlayerManager.loadItemOrdered(musicManager, url, new AudioLoadResultHandler() {
+
+            @Override
+            public void trackLoaded(AudioTrack track) {
+                musicManager.trackScheduler.queue(track);
+            }
+
+            @Override
+            public void playlistLoaded(AudioPlaylist playlist) {
+                final List<AudioTrack> tracks = playlist.getTracks();
+                if(tracks.isEmpty()) return;
+
+                if(url.startsWith("ytsearch:")) {
+                    trackLoaded(tracks.get(0));
+                }
+            }
+
+            @Override
+            public void noMatches() {}
+
+            @Override
+            public void loadFailed(FriendlyException exception) {}
         });
     }
 
