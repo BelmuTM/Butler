@@ -11,6 +11,7 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;
+import java.util.Objects;
 
 public class SkipCommand extends ListenerAdapter {
 
@@ -23,22 +24,23 @@ public class SkipCommand extends ListenerAdapter {
 
         if(cmd.equals(cmdName)) {
             Guild guild = event.getGuild();
+            assert guild != null;
 
-            if (!guild.getSelfMember().getVoiceState().inAudioChannel()) {
+            if (!Objects.requireNonNull(guild.getSelfMember().getVoiceState()).inAudioChannel()) {
                 event.deferReply(true).queue();
                 CooldownMessages.reply(event, PlayerManager.getInstance().notConnected.build());
                 return;
             }
 
-            if (!guild.getAudioManager().getConnectedChannel().getMembers().contains(event.getMember())) {
+            if (!Objects.requireNonNull(guild.getAudioManager().getConnectedChannel()).getMembers().contains(event.getMember())) {
                 event.deferReply(true).queue();
                 CooldownMessages.reply(event, PlayerManager.getInstance().sameChannel.build());
                 return;
             }
 
-            final GuildMusicManager guildMusicManager = PlayerManager.getInstance().getMusicManager(guild);
+            final GuildMusicManager guildMusicManager = PlayerManager.getInstance().getMusicManager(guild, event.getChannel());
 
-            if (guildMusicManager.trackScheduler.queue.size() < 1) {
+            if (guildMusicManager.trackScheduler.queue.isEmpty()) {
                 event.deferReply(true).queue();
                 CooldownMessages.reply(event, PlayerManager.getInstance().noTrackNext.build());
                 return;
@@ -49,12 +51,14 @@ public class SkipCommand extends ListenerAdapter {
 
             final EmbedBuilder skip = new EmbedBuilder()
                     .setColor(guild.getSelfMember().getColor())
-                    .setDescription("⏭️ **Skipped** " + playing.getInfo().author + " » `" + playing.getInfo().title+ "`")
+                    .setDescription("⏭️ **Skipped** » `" + playing.getInfo().title+ "`")
                     .setFooter("Requested by " + user.getName(), user.getAvatarUrl())
                     .setTimestamp(Instant.now());
 
             event.deferReply().queue();
+
             guildMusicManager.trackScheduler.nextTrack();
+
             event.getHook().sendMessageEmbeds(skip.build()).queue();
         }
     }

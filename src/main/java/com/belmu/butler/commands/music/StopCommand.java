@@ -8,6 +8,7 @@ import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.channel.unions.AudioChannelUnion;
+import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
@@ -28,7 +29,6 @@ public class StopCommand extends ListenerAdapter {
 
     private final Map<Message, List<Member>> stopVotes =  new HashMap<>();
     private final int minStopVotes = 2;
-    private final int minMembersInChannel = 3;
 
     @Override
     public void onSlashCommandInteraction(@NotNull SlashCommandInteractionEvent event) {
@@ -36,6 +36,7 @@ public class StopCommand extends ListenerAdapter {
 
         if(cmd.equals(cmdName)) {
             Guild guild = event.getGuild();
+            assert guild != null;
             AudioChannelUnion channel = guild.getAudioManager().getConnectedChannel();
 
             if (channel == null || !guild.getSelfMember().getVoiceState().inAudioChannel()) {
@@ -52,24 +53,25 @@ public class StopCommand extends ListenerAdapter {
                 return;
             }
 
+            int minMembersInChannel = 3;
             if(channel.getMembers().size() >= minMembersInChannel) {
                 event.deferReply().queue();
                 List<Member> votes = new ArrayList<>(); votes.add(member);
 
-                event.getHook().sendMessageEmbeds(getVoteMessage(guild, member.getUser(), votes.size()))
+                event.getHook().sendMessageEmbeds(getVoteMessage(guild, event.getChannel(), member.getUser(), votes.size()))
                         .addActionRow(Button.of(ButtonStyle.DANGER, "stop-music", "Vote"))
                         .queue(msg -> stopVotes.put(msg, votes));
                 return;
             }
             event.deferReply(true).queue();
 
-            stopMusic(guild);
+            stopMusic(guild, event.getChannel());
             event.getHook().sendMessage("Bye! :wave:").queue();
         }
     }
 
-    private MessageEmbed getVoteMessage(Guild guild, User user, int votes) {
-        AudioTrack playing = PlayerManager.getInstance().getMusicManager(guild).audioPlayer.getPlayingTrack();
+    private MessageEmbed getVoteMessage(Guild guild, MessageChannelUnion channel, User user, int votes) {
+        AudioTrack playing = PlayerManager.getInstance().getMusicManager(guild, channel).audioPlayer.getPlayingTrack();
         String duration    = new SimpleDateFormat("mm:ss").format(playing.getDuration());
         String nowPlaying  = "[NOW PLAYING] " + playing.getInfo().author + " » \"" + playing.getInfo().title + "\" [" + duration + "]";
 
@@ -80,8 +82,8 @@ public class StopCommand extends ListenerAdapter {
         return vote.build();
     }
 
-    private void stopMusic(Guild guild) {
-        final GuildMusicManager guildMusicManager = PlayerManager.getInstance().getMusicManager(guild);
+    private void stopMusic(Guild guild, MessageChannelUnion channel) {
+        final GuildMusicManager guildMusicManager = PlayerManager.getInstance().getMusicManager(guild, channel);
         guildMusicManager.audioPlayer.stopTrack();
         guildMusicManager.trackScheduler.queue.clear();
         guild.getAudioManager().closeAudioConnection();
@@ -110,13 +112,13 @@ public class StopCommand extends ListenerAdapter {
             stopVotes.put(message, votes);
 
             Guild guild = event.getGuild();
-            event.getInteraction().getMessage().editMessageEmbeds(getVoteMessage(guild, message.getAuthor(), votes.size())).queue();
+            event.getInteraction().getMessage().editMessageEmbeds(getVoteMessage(guild, event.getChannel(), message.getAuthor(), votes.size())).queue();
 
             event.getHook().sendMessage(":small_orange_diamond: | " + member.getAsMention() + " voted to stop the music.").queue();
 
             if(votes.size() >= minStopVotes) {
                 stopVotes.remove(message);
-                stopMusic(guild);
+                stopMusic(guild, event.getChannel());
             }
         }
     }

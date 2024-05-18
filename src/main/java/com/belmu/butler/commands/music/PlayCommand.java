@@ -4,6 +4,7 @@ package com.belmu.butler.commands.music;
 import com.belmu.butler.Butler;
 import com.belmu.butler.lavaplayer.PlayerManager;
 import com.belmu.butler.utility.CooldownMessages;
+import com.belmu.butler.utility.Duration;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
@@ -43,6 +44,7 @@ public class PlayCommand extends ListenerAdapter {
 
         if(cmd.equals(cmdName)) {
             Member member = event.getMember();
+            assert member != null;
             GuildVoiceState memberVoiceState = member.getVoiceState();
 
             if (!memberVoiceState.inAudioChannel()) {
@@ -58,25 +60,25 @@ public class PlayCommand extends ListenerAdapter {
 
             event.getGuild().getAudioManager().openAudioConnection(memberVoiceState.getChannel());
 
-            String url = event.getOption("song").getAsString();
+            String uri = event.getOption("song").getAsString();
 
-            if(url.contains(spotifyTrackUrl)) {
-                String trimmedUrl = url.replace(spotifyTrackUrl, "");
-                String trackId = trimmedUrl.substring(0, trimmedUrl.indexOf("?"));
+            if(uri.contains(spotifyTrackUrl)) {
+                String trimmedUri = uri.replace(spotifyTrackUrl, "");
+                String trackId    = trimmedUri.substring(0, trimmedUri.indexOf("?"));
 
                 GetTrackRequest trackRequest = Butler.spotifyApi.getTrack(trackId).build();
 
                 try {
                     Track track = trackRequest.execute();
-                    url = "ytsearch:" + String.join(" ", track.getArtists()[0].getName() + track.getName());
+                    uri = "ytsearch:" + String.join(" ", track.getArtists()[0].getName() + track.getName());
 
                 } catch (IOException | SpotifyWebApiException | org.apache.hc.core5.http.ParseException e) {
                     e.printStackTrace();
                     return;
                 }
-            } else if(url.contains(spotifyPlaylistUrl)) {
-                String trimmedUrl = url.replace(spotifyPlaylistUrl, "");
-                String playlistId = trimmedUrl.substring(0, trimmedUrl.indexOf("?"));
+            } else if(uri.contains(spotifyPlaylistUrl)) {
+                String trimmedUri = uri.replace(spotifyPlaylistUrl, "");
+                String playlistId = trimmedUri.substring(0, trimmedUri.indexOf("?"));
 
                 GetPlaylistRequest playlistRequest = Butler.spotifyApi.getPlaylist(playlistId).build();
 
@@ -87,11 +89,11 @@ public class PlayCommand extends ListenerAdapter {
                     long totalDuration = 0;
                     for(PlaylistTrack playlistTrack : playlistTracks.getItems()) {
                         GetTrackRequest trackRequest = Butler.spotifyApi.getTrack(playlistTrack.getTrack().getId()).build();
-                        Track track = null;
+                        Track track;
 
                         try {
                             track = trackRequest.execute();
-                            url = "ytsearch:" + String.join(" ", track.getArtists()[0].getName() + track.getName());
+                            uri = "ytsearch:" + String.join(" ", track.getArtists()[0].getName() + track.getName());
                         } catch (IOException | SpotifyWebApiException | org.apache.hc.core5.http.ParseException e) {
                             final EmbedBuilder failed = new EmbedBuilder()
                                     .setColor(Butler.darkGray)
@@ -101,16 +103,12 @@ public class PlayCommand extends ListenerAdapter {
                         }
 
                         totalDuration += track.getDurationMs().longValue();
-                        PlayerManager.getInstance().silentLoadAndPlay(event, url);
+                        PlayerManager.getInstance().silentLoadAndPlay(event, uri);
                     }
 
                     User user = event.getUser();
 
-                    long hours   = TimeUnit.MILLISECONDS.toHours(totalDuration);
-                    long minutes = TimeUnit.MILLISECONDS.toMinutes(totalDuration) % 60;
-                    long seconds = TimeUnit.MILLISECONDS.toSeconds(totalDuration) % 60;
-
-                    String formattedDuration = String.format("%02d:%02d:%02d", hours, minutes, seconds);
+                    String formattedDuration = Duration.getFormattedDuration(totalDuration);
 
                     final EmbedBuilder playlistLoaded = new EmbedBuilder()
                             .setColor(Butler.gold)
@@ -131,12 +129,13 @@ public class PlayCommand extends ListenerAdapter {
                 }
             } else {
                 try {
-                    new URI(url);
+                    new URI(uri);
                 } catch (URISyntaxException use) {
-                    url = "ytsearch:" + String.join(" ", url) + " audio";
+                    uri = "ytsearch:" + String.join(" ", uri);
                 }
             }
-            PlayerManager.getInstance().loadAndPlay(event, url);
+
+            PlayerManager.getInstance().loadAndPlay(event, uri);
         }
     }
 }

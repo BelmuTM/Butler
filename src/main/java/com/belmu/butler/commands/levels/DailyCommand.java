@@ -21,8 +21,8 @@ public class DailyCommand extends ListenerAdapter {
 
     @Override
     public void onSlashCommandInteraction(@NotNull SlashCommandInteractionEvent event) {
-        String cmd = event.getName();
-        User user = event.getMember().getUser();
+        String cmd  = event.getName();
+        User   user = event.getUser();
 
         if (cmd.equals(cmdName)) {
             event.deferReply(true).queue();

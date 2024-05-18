@@ -13,9 +13,7 @@ public class PingCommand extends ListenerAdapter {
 
     @Override
     public void onSlashCommandInteraction(@NotNull SlashCommandInteractionEvent event) {
-        String cmd = event.getName();
-
-        if(cmd.equals(cmdName)) {
+        if(event.getName().equals(cmdName)) {
             event.deferReply().queue();
 
             event.getHook().sendMessage("Pong! :ping_pong: ").queue(

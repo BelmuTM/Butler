@@ -11,6 +11,7 @@ import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;
+import java.util.Objects;
 
 public class CalcCommand extends ListenerAdapter {
 
@@ -23,20 +24,21 @@ public class CalcCommand extends ListenerAdapter {
 
     @Override
     public void onSlashCommandInteraction(@NotNull SlashCommandInteractionEvent event) {
-        String cmd = event.getName();
+        String cmd    = event.getName();
         Member member = event.getMember();
-        User user = event.getUser();
+        User   user   = event.getUser();
 
         if(cmd.equals(cmdName)) {
             event.deferReply().queue();
 
-            Double level  = event.getOption("level").getAsDouble();
+            Double level  = Objects.requireNonNull(event.getOption("level")).getAsDouble();
             Double xpFor  = Levels.calcXpForLevel(level);
             Double xpFrom = Levels.calcXpForLevel(level - 1);
             Double xpGap  = xpFor - xpFrom;
 
             EmbedBuilder calc = new EmbedBuilder();
 
+            assert member != null;
             calc.setColor(member.getColor());
 
             calc.addField(

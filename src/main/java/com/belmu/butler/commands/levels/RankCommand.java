@@ -25,7 +25,7 @@ public class RankCommand extends ListenerAdapter {
 
     @Override
     public void onSlashCommandInteraction(@NotNull SlashCommandInteractionEvent event) {
-        String cmd = event.getName();
+        String cmd    = event.getName();
         Member member = event.getMember();
 
         if(cmd.equals(cmdName)) {
@@ -58,7 +58,7 @@ public class RankCommand extends ListenerAdapter {
                 serverRank = "#" + Levels.getRank(user, new ArrayList(Levels.getGuildSortedRanking(event.getGuild()).keySet()));
             } catch(NullPointerException ignored) {}
 
-            int lvl     = Levels.getLevel(user).intValue();
+            int lvl     = Levels.getLevel(user);
             int nextLvl = lvl + 1;
             String level = String.valueOf(lvl);
             String nextLevel = String.valueOf(lvl + 1);

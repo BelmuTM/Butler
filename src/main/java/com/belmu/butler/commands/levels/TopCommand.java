@@ -21,31 +21,33 @@ public class TopCommand extends ListenerAdapter {
 
     public static OptionData[] options = new OptionData[] {
             new OptionData(OptionType.STRING, "type", "The desired type of leaderboard", true)
-                    .addChoice("Global", "Global")
-                    .addChoice("Server", "Server"),
+                    .addChoice("Global", "global")
+                    .addChoice("Server", "server"),
             new OptionData(OptionType.INTEGER, "page", "The leaderboard page you want to consult", false)
     };
 
+    private final String[] prefixes = { ":first_place:", ":second_place:", ":third_place:", "**[%]**" };
+
     @Override
     public void onSlashCommandInteraction(@NotNull SlashCommandInteractionEvent event) {
-        String cmd = event.getName();
-        User user = event.getMember().getUser();
+        String cmd  = event.getName();
+        User   user = event.getUser();
 
         if(cmd.equals(cmdName)) {
             event.deferReply().queue();
 
             OptionMapping type = event.getOption("type");
+            assert type != null;
 
             List keys = switch (type.getAsString().toLowerCase()) {
                 case "global" -> new ArrayList(Levels.sortedRanking.keySet());
-                case "server" -> new ArrayList(Levels.getGuildSortedRanking(event.getGuild()).keySet());
-                default -> null;
+                case "server" -> new ArrayList(Levels.getGuildSortedRanking(Objects.requireNonNull(event.getGuild())).keySet());
+                default -> new ArrayList<>();
             };
 
             int page;
             try {
-                page = event.getOption("page").getAsInt();
-                page = page <= 0 ? 1 : page;
+                page = Math.max(1, Objects.requireNonNull(event.getOption("page")).getAsInt());
             } catch(NullPointerException npe) {
                 page = 1;
             }
@@ -54,14 +56,9 @@ public class TopCommand extends ListenerAdapter {
             final int maxLineLength = 45;
 
             for (int i = (10 * (page - 1)) + 1; i <= 10 * page; i++) {
-                String text = "";
-                String name = "None";
-                String prefix = switch (i) {
-                    case 1 -> ":first_place:";
-                    case 2 -> ":second_place:";
-                    case 3 -> ":third_place:";
-                    default -> "**[" + i + "]**";
-                };
+                String text   = "";
+                String name   = "None";
+                String prefix = prefixes[Math.min(3, i - 1)].replace("%", Integer.toString(i));
 
                 try {
                     User u = Butler.jda.getUserById(keys.get(i - 1).toString());
@@ -75,16 +72,12 @@ public class TopCommand extends ListenerAdapter {
                 } catch (IndexOutOfBoundsException | NullPointerException exc) {
                     text = prefix + "%`" + name + "`%" + "[`N/A`]";
                 }
-                leaderboard.append(text.replaceAll("%", addBlank((maxLineLength - name.length()) / 2))).append("\n");
+                leaderboard.append(text.replaceAll("%", addBlank((int) Math.round((maxLineLength - name.length()) * 0.5)))).append("\n");
             }
 
-            String rank = "N/A";
-            try {
-                rank = "#" + Levels.getRank(user, keys);
-            } catch(NullPointerException ignored) {}
-
-            String level = String.valueOf(Levels.getLevel(user).intValue());
-            int xp = Levels.getXp(user).intValue();
+            String rank  = "#" + Levels.getRank(user, keys);
+            String level = String.valueOf(Levels.getLevel(user));
+            int    xp    = Levels.getXp(user).intValue();
 
             EmbedBuilder lb = new EmbedBuilder();
 

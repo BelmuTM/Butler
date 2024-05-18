@@ -20,18 +20,31 @@ public class GainExpEvent extends ListenerAdapter {
 
     private final int cooldownTime = 10; // seconds
 
+    private final String[] levelUpEmojis = new String[] {
+            ":tada:",
+            ":sparkles:",
+            ":hibiscus:",
+            ":sunflower:",
+            ":crown:",
+            ":partying_face:",
+            ":star_struck:",
+            ":confetti_ball:"
+    };
+
     @Override
     public void onMessageReceived(@NotNull MessageReceivedEvent event) {
+        assert event.getMember() != null;
         User user = event.getMember().getUser();
         if(user.isBot()) return;
 
         long currentTimeMillis = System.currentTimeMillis();
 
         if (cooldown.containsKey(user)) {
-            if ((cooldown.get(user)) <= currentTimeMillis) Levels.addExp(user, randomXP(5, 10));
+            if ((cooldown.get(user)) <= currentTimeMillis)
+                Levels.addExp(user, round(ThreadLocalRandom.current().nextDouble(5, 10), 2));
             else return;
         }
-        cooldown.put(user, currentTimeMillis + (cooldownTime * 1000));
+        cooldown.put(user, currentTimeMillis + cooldownTime * 1000);
 
         if (Levels.hasPassedLevel(user)) {
             Member member = event.getMember();
@@ -39,9 +52,11 @@ public class GainExpEvent extends ListenerAdapter {
             double newLvl = Levels.getLevel(user) + 1D;
             Levels.setLevel(user, newLvl);
 
+            String emoji = levelUpEmojis[new Random().ints(0, levelUpEmojis.length).findFirst().getAsInt()];
+
             EmbedBuilder levelUp = new EmbedBuilder()
                     .setColor(member.getColor())
-                    .setTitle(":green_circle: **Level Up!**")
+                    .setTitle(emoji + " **Level Up!**")
                     .setDescription(member.getAsMention() + " Achieved Level " + new DecimalFormat("#").format(newLvl))
                     .setThumbnail(user.getAvatarUrl());
             event.getChannel().sendMessageEmbeds(levelUp.build()).queue();
@@ -53,9 +68,5 @@ public class GainExpEvent extends ListenerAdapter {
     public static double round(double value, int places) {
         if(places < 0) throw new IllegalArgumentException();
         return BigDecimal.valueOf(value).setScale(places, RoundingMode.HALF_UP).doubleValue();
-    }
-
-    double randomXP(double min, double max) {
-        return round(ThreadLocalRandom.current().nextDouble(min, max), 2);
     }
 }

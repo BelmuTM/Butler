@@ -9,6 +9,7 @@ import com.belmu.butler.commands.levels.TopCommand;
 import com.belmu.butler.commands.music.*;
 import com.belmu.butler.level.GainExpEvent;
 import com.belmu.butler.level.LevelConfig;
+import com.sedmelluq.discord.lavaplayer.jdaudp.NativeAudioSendFactory;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.OnlineStatus;
@@ -83,6 +84,7 @@ public class Butler extends ListenerAdapter {
     public static void clientCredentialsSync() {
         try {
             final ClientCredentials clientCredentials = clientCredentialsRequest.execute();
+            clientCredentials.builder().setExpiresIn(999999999);
             spotifyApi.setAccessToken(clientCredentials.getAccessToken());
         } catch (IOException | SpotifyWebApiException | ParseException e) {
             e.printStackTrace();
@@ -92,7 +94,8 @@ public class Butler extends ListenerAdapter {
     public static void main(String[] args) throws InterruptedException {
         JDABuilder builder = JDABuilder
                 .create(Credentials.token, GatewayIntent.GUILD_MEMBERS, GatewayIntent.GUILD_VOICE_STATES, GatewayIntent.GUILD_MESSAGES, GatewayIntent.MESSAGE_CONTENT)
-                .setMemberCachePolicy(MemberCachePolicy.ALL);
+                .setMemberCachePolicy(MemberCachePolicy.ALL)
+                .setAudioSendFactory(new NativeAudioSendFactory());
 
         builder.setStatus(OnlineStatus.ONLINE);
         builder.setActivity(Activity.watching("Chainsaw Man"));

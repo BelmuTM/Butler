@@ -2,16 +2,28 @@ package com.belmu.butler.lavaplayer;
 
 import com.belmu.butler.Butler;
 import com.belmu.butler.utility.CooldownMessages;
+import com.belmu.butler.utility.Duration;
 import com.sedmelluq.discord.lavaplayer.player.AudioLoadResultHandler;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager;
 import com.sedmelluq.discord.lavaplayer.player.DefaultAudioPlayerManager;
 import com.sedmelluq.discord.lavaplayer.source.AudioSourceManagers;
+import com.sedmelluq.discord.lavaplayer.source.bandcamp.BandcampAudioSourceManager;
+import com.sedmelluq.discord.lavaplayer.source.beam.BeamAudioSourceManager;
+import com.sedmelluq.discord.lavaplayer.source.http.HttpAudioSourceManager;
+import com.sedmelluq.discord.lavaplayer.source.local.LocalAudioSourceManager;
+import com.sedmelluq.discord.lavaplayer.source.twitch.TwitchStreamAudioSourceManager;
+import com.sedmelluq.discord.lavaplayer.source.vimeo.VimeoAudioSourceManager;
 import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
+import dev.lavalink.youtube.YoutubeAudioSourceManager;
+import dev.lavalink.youtube.clients.AndroidWithThumbnail;
+import dev.lavalink.youtube.clients.MusicWithThumbnail;
+import dev.lavalink.youtube.clients.WebWithThumbnail;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 
 import java.time.Instant;
@@ -19,7 +31,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 
 public class PlayerManager {
 
@@ -29,28 +40,39 @@ public class PlayerManager {
     private final AudioPlayerManager audioPlayerManager;
 
     public PlayerManager() {
-        this.musicManagers = new HashMap<>();
+        this.musicManagers      = new HashMap<>();
         this.audioPlayerManager = new DefaultAudioPlayerManager();
         this.audioPlayerManager.setFrameBufferDuration(1000);
         this.audioPlayerManager.setItemLoaderThreadPoolSize(500);
+
+        this.audioPlayerManager.registerSourceManager(new YoutubeAudioSourceManager(true, new MusicWithThumbnail(), new WebWithThumbnail(), new AndroidWithThumbnail()));
+        this.audioPlayerManager.registerSourceManager(new TwitchStreamAudioSourceManager());
+        this.audioPlayerManager.registerSourceManager(new BandcampAudioSourceManager());
+        this.audioPlayerManager.registerSourceManager(new VimeoAudioSourceManager());
+        this.audioPlayerManager.registerSourceManager(new BeamAudioSourceManager());
+        this.audioPlayerManager.registerSourceManager(new LocalAudioSourceManager());
+        this.audioPlayerManager.registerSourceManager(new HttpAudioSourceManager());
+
         AudioSourceManagers.registerRemoteSources(audioPlayerManager);
         AudioSourceManagers.registerLocalSource(audioPlayerManager);
     }
 
     public static PlayerManager getInstance() {
-        if(INSTANCE == null) INSTANCE = new PlayerManager(); return INSTANCE;
+        if(INSTANCE == null) INSTANCE = new PlayerManager();
+        return INSTANCE;
     }
 
-    public GuildMusicManager getMusicManager(Guild guild){
+    public GuildMusicManager getMusicManager(Guild guild, MessageChannelUnion channel) {
         return this.musicManagers.computeIfAbsent(guild.getIdLong(), (guildId) -> {
-            final GuildMusicManager guildMusicManager = new GuildMusicManager(this.audioPlayerManager);
+            final GuildMusicManager guildMusicManager = new GuildMusicManager(this.audioPlayerManager, channel);
             guild.getAudioManager().setSendingHandler(guildMusicManager.getSendHandler());
             return guildMusicManager;
         });
     }
 
     public void loadAndPlay(SlashCommandInteractionEvent event, String url) {
-        GuildMusicManager musicManager = getMusicManager(Objects.requireNonNull(event.getGuild()));
+        Guild guild = Objects.requireNonNull(event.getGuild());
+        GuildMusicManager musicManager = getMusicManager(guild, event.getChannel());
 
         audioPlayerManager.loadItemOrdered(musicManager, url, new AudioLoadResultHandler() {
 
@@ -58,13 +80,7 @@ public class PlayerManager {
             public void trackLoaded(AudioTrack track) {
                 User user = event.getUser();
 
-                long duration = track.getDuration();
-
-                long hours   = TimeUnit.MILLISECONDS.toHours(duration);
-                long minutes = TimeUnit.MILLISECONDS.toMinutes(duration) % 60;
-                long seconds = TimeUnit.MILLISECONDS.toSeconds(duration) % 60;
-
-                String formattedDuration = String.format("%02d:%02d:%02d", hours, minutes, seconds);
+                String formattedDuration = Duration.getFormattedDuration(track.getDuration());
 
                 final EmbedBuilder trackLoaded = new EmbedBuilder()
                         .setColor(Butler.gold)
@@ -85,7 +101,7 @@ public class PlayerManager {
                 if(tracks.isEmpty()) return;
 
                 if(url.startsWith("ytsearch:")) {
-                    trackLoaded(tracks.get(0));
+                    trackLoaded(tracks.getFirst());
                     return;
                 }
 
@@ -97,11 +113,7 @@ public class PlayerManager {
 
                 User user = event.getUser();
 
-                long hours   = TimeUnit.MILLISECONDS.toHours(totalDuration);
-                long minutes = TimeUnit.MILLISECONDS.toMinutes(totalDuration) % 60;
-                long seconds = TimeUnit.MILLISECONDS.toSeconds(totalDuration) % 60;
-
-                String formattedDuration = String.format("%02d:%02d:%02d", hours, minutes, seconds);
+                String formattedDuration = Duration.getFormattedDuration(totalDuration);
 
                 final EmbedBuilder playlistLoaded = new EmbedBuilder()
                         .setColor(Butler.gold)
@@ -132,7 +144,7 @@ public class PlayerManager {
     }
 
     public void silentLoadAndPlay(SlashCommandInteractionEvent event, String url) {
-        GuildMusicManager musicManager = getMusicManager(Objects.requireNonNull(event.getGuild()));
+        GuildMusicManager musicManager = getMusicManager(Objects.requireNonNull(event.getGuild()), event.getChannel());
 
         audioPlayerManager.loadItemOrdered(musicManager, url, new AudioLoadResultHandler() {
 
@@ -147,7 +159,7 @@ public class PlayerManager {
                 if(tracks.isEmpty()) return;
 
                 if(url.startsWith("ytsearch:")) {
-                    trackLoaded(tracks.get(0));
+                    musicManager.trackScheduler.queue(tracks.getFirst());
                 }
             }
 

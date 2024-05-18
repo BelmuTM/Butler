@@ -11,12 +11,11 @@ public class Levels {
     public static LinkedHashMap<String, Double> sortedRanking = new LinkedHashMap<>();
 
     public static void setLevel(User user, double value) {
-        LevelConfig.levelMap.put(user.getId(), value);
         LevelConfig.xpMap.put(user.getId(), calcXpForLevel(value));
     }
 
-    public static Double getLevel(User user) {
-        return LevelConfig.levelMap.computeIfAbsent(user.getId(), k -> 0D);
+    public static int getLevel(User user) {
+        return calculateLevel(LevelConfig.xpMap.computeIfAbsent(user.getId(), k -> 0D));
     }
 
     public static void setXp(User user, double value) {
@@ -62,8 +61,8 @@ public class Levels {
     }
 
     public static LinkedHashMap<String, Double> getGuildSortedRanking(Guild guild) {
-        LinkedHashMap<String, Double> sorted = new LinkedHashMap<>();
-        Map<String, Double> guildXpMap = new HashMap<>();
+        LinkedHashMap<String, Double> sorted     = new LinkedHashMap<>();
+        Map<String, Double>           guildXpMap = new HashMap<>();
 
         for(Member member : guild.getMembers()) {
             if(!member.getUser().isBot()) guildXpMap.put(member.getId(), getXp(member.getUser()));
