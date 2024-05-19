@@ -20,9 +20,7 @@ public class SkipCommand extends ListenerAdapter {
 
     @Override
     public void onSlashCommandInteraction(@NotNull SlashCommandInteractionEvent event) {
-        String cmd = event.getName();
-
-        if(cmd.equals(cmdName)) {
+        if(event.getName().equals(cmdName)) {
             Guild guild = event.getGuild();
             assert guild != null;
 

@@ -1,30 +1,36 @@
 package com.belmu.butler;
 
-import org.json.simple.JSONObject;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
 import java.io.FileReader;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.Writer;
 
 public class DataParser {
 
-    public static void writeJSON(String path, JSONObject object) {
-        try {
-            Files.write(Paths.get(path), object.toJSONString().getBytes());
-        } catch (Exception ex) {
-            ex.printStackTrace();
+    public final Gson gson;
+
+    public DataParser() {
+        this.gson = new GsonBuilder().create();
+    }
+
+    public void writeJSON(String path, Object object) {
+        try (Writer writer = new FileWriter(path)) {
+            this.gson.toJson(object, writer);
+        } catch(IOException ioe) {
+            System.out.println("Error: " + ioe.getMessage());
         }
     }
 
-    public static Object readJSON(String path) {
-        try {
-            FileReader reader = new FileReader(path);
-            JSONParser jsonParser = new JSONParser();
-
-            return jsonParser.parse(reader);
-        } catch (Exception ex) {
-            ex.printStackTrace();
+    public Object readJSON(String path) {
+        try (FileReader reader = new FileReader(path)) {
+            return new JSONParser().parse(reader);
+        } catch (IOException | ParseException e) {
+            System.out.println("Error: " + e.getMessage());
         }
         return null;
     }

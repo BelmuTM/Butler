@@ -22,9 +22,7 @@ public class QueueCommand extends ListenerAdapter {
 
     @Override
     public void onSlashCommandInteraction(@NotNull SlashCommandInteractionEvent event) {
-        String cmd = event.getName();
-
-        if(cmd.equals(cmdName)) {
+        if(event.getName().equals(cmdName)) {
             Member member = event.getMember();
 
             final GuildMusicManager guildMusicManager = PlayerManager.getInstance().getMusicManager(Objects.requireNonNull(event.getGuild()), event.getChannel());

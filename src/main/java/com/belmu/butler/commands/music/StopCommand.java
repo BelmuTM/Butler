@@ -17,10 +17,7 @@ import net.dv8tion.jda.api.interactions.components.buttons.ButtonStyle;
 import org.jetbrains.annotations.NotNull;
 
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class StopCommand extends ListenerAdapter {
 
@@ -32,9 +29,7 @@ public class StopCommand extends ListenerAdapter {
 
     @Override
     public void onSlashCommandInteraction(@NotNull SlashCommandInteractionEvent event) {
-        String cmd = event.getName();
-
-        if(cmd.equals(cmdName)) {
+        if(event.getName().equals(cmdName)) {
             Guild guild = event.getGuild();
             assert guild != null;
             AudioChannelUnion channel = guild.getAudioManager().getConnectedChannel();
@@ -96,8 +91,9 @@ public class StopCommand extends ListenerAdapter {
         if(!stopVotes.containsKey(message)) return;
 
         Member member = event.getMember();
+        assert member != null;
 
-        if(event.getButton().getId().equals("stop-music")) {
+        if(Objects.equals(event.getButton().getId(), "stop-music")) {
 
             if(stopVotes.get(message).contains(member)) {
                 event.deferReply(true).queue();

@@ -13,6 +13,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Objects;
 
 public class RankCommand extends ListenerAdapter {
 
@@ -25,18 +26,19 @@ public class RankCommand extends ListenerAdapter {
 
     @Override
     public void onSlashCommandInteraction(@NotNull SlashCommandInteractionEvent event) {
-        String cmd    = event.getName();
         Member member = event.getMember();
+        assert member != null;
 
-        if(cmd.equals(cmdName)) {
+        if(event.getName().equals(cmdName)) {
             event.deferReply().queue();
 
             Member target;
             try {
-                target = event.getOption("user").getAsMember();
+                target = Objects.requireNonNull(event.getOption("user")).getAsMember();
             } catch(NullPointerException npe) {
                 target = member;
             }
+            assert target != null;
             User user = target.getUser();
 
             if(user.isBot()) {
@@ -50,27 +52,25 @@ public class RankCommand extends ListenerAdapter {
 
             String globalRank = "N/A";
             try {
-                globalRank = "#" + Levels.getRank(user, new ArrayList(Levels.sortedRanking.keySet()));
+                globalRank = "#" + Levels.getRank(user, new ArrayList(Levels.globalRanking.keySet()));
             } catch(NullPointerException ignored) {}
 
             String serverRank = "N/A";
             try {
-                serverRank = "#" + Levels.getRank(user, new ArrayList(Levels.getGuildSortedRanking(event.getGuild()).keySet()));
+                serverRank = "#" + Levels.getRank(user, new ArrayList(Levels.getGuildSortedRanking(Objects.requireNonNull(event.getGuild())).keySet()));
             } catch(NullPointerException ignored) {}
 
-            int lvl     = Levels.getLevel(user);
-            int nextLvl = lvl + 1;
-            String level = String.valueOf(lvl);
-            String nextLevel = String.valueOf(lvl + 1);
+            int level     = Levels.getLevel(user);
+            int nextLevel = level + 1;
 
             Double xpDouble = Levels.getXp(user);
             int xp = xpDouble.intValue();
 
-            Double currentXp = (Levels.calcXpForLevel(lvl) - Levels.getXp(user)) - (Levels.calcXpForLevel(lvl) - xpDouble) * 2;
-            Double xpForNext = Levels.calcXpForLevel(nextLvl) - Levels.calcXpForLevel(lvl);
+            double currentXp = Levels.getXp(user) - Levels.calculateXp(level);
+            double xpForNext = Levels.calculateXp(nextLevel) - Levels.calculateXp(level);
 
-            Double percentage = calculatePercentage(currentXp, xpForNext);
-            double tenth = percentage * 0.1;
+            double percentage = currentXp * 100 / xpForNext;
+            double tenth      = percentage * 0.1;
 
             StringBuilder bar = new StringBuilder();
             for (double i = 0; i < 10; i++) {
@@ -90,13 +90,10 @@ public class RankCommand extends ListenerAdapter {
             rank.setFooter("Requested by " + member.getEffectiveName(), member.getUser().getAvatarUrl());
             rank.setTimestamp(Instant.now());
 
-            rank.addField("Progress", "`[" + level + "]` " + bar.toString().trim() + " `[" + nextLevel + "]` " + "**" + percentage.intValue() + "%**" + " *(" + currentXp.intValue() + "/" + xpForNext.intValue() + ")*", false);
+            rank.addField("Progress", "`[" + level + "]` " + bar.toString().trim() + " `[" + nextLevel + "]` " + "**" +
+                    (int) percentage + "%**" + " *(" + (int) currentXp + "/" + (int) xpForNext + ")*", false);
 
             event.getHook().sendMessageEmbeds(rank.build()).queue();
         }
-    }
-
-    public double calculatePercentage(double obtained, double total) {
-        return obtained * 100 / total;
     }
 }

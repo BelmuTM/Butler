@@ -10,19 +10,9 @@ public class CooldownMessages {
         event.replyEmbeds(embed).queue(msg -> msg.deleteOriginal().queueAfter(Butler.deleteTime, Butler.unit, null, fail -> {}));
     }
 
-    public static void send(SlashCommandInteractionEvent event, MessageEmbed embed, long del)  {
-        event.replyEmbeds(embed).queue(msg -> msg.deleteOriginal().queueAfter(del, Butler.unit, null, fail -> {}));
-    }
-
     public static void reply(SlashCommandInteractionEvent event, MessageEmbed embed)  {
         event.getHook().sendMessageEmbeds(embed).queue(msg -> {
             if(!msg.isEphemeral()) msg.delete().queueAfter(Butler.deleteTime, Butler.unit, null, fail -> {});
-        });
-    }
-
-    public static void reply(SlashCommandInteractionEvent event, MessageEmbed embed, long del)  {
-        event.getHook().sendMessageEmbeds(embed).queue(msg -> {
-            if(!msg.isEphemeral()) msg.delete().queueAfter(del, Butler.unit, null, fail -> {});
         });
     }
 }

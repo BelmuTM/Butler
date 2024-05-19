@@ -30,17 +30,16 @@ public class TopCommand extends ListenerAdapter {
 
     @Override
     public void onSlashCommandInteraction(@NotNull SlashCommandInteractionEvent event) {
-        String cmd  = event.getName();
-        User   user = event.getUser();
+        User user = event.getUser();
 
-        if(cmd.equals(cmdName)) {
+        if(event.getName().equals(cmdName)) {
             event.deferReply().queue();
 
             OptionMapping type = event.getOption("type");
             assert type != null;
 
-            List keys = switch (type.getAsString().toLowerCase()) {
-                case "global" -> new ArrayList(Levels.sortedRanking.keySet());
+            ArrayList<String> uuidList = switch (type.getAsString().toLowerCase()) {
+                case "global" -> new ArrayList(Levels.globalRanking.keySet());
                 case "server" -> new ArrayList(Levels.getGuildSortedRanking(Objects.requireNonNull(event.getGuild())).keySet());
                 default -> new ArrayList<>();
             };
@@ -61,42 +60,39 @@ public class TopCommand extends ListenerAdapter {
                 String prefix = prefixes[Math.min(3, i - 1)].replace("%", Integer.toString(i));
 
                 try {
-                    User u = Butler.jda.getUserById(keys.get(i - 1).toString());
+                    User u = Butler.jda.getUserById(uuidList.get(i - 1));
 
                     if (!user.isBot()) {
                         name = u.getName();
                         text = prefix + "%`" + name + "`%" + "[`" + Levels.getXp(u).intValue() + "`]";
                     } else {
-                        keys.remove(i);
+                        uuidList.remove(i);
                     }
                 } catch (IndexOutOfBoundsException | NullPointerException exc) {
                     text = prefix + "%`" + name + "`%" + "[`N/A`]";
                 }
-                leaderboard.append(text.replaceAll("%", addBlank((int) Math.round((maxLineLength - name.length()) * 0.5)))).append("\n");
+
+                String blanks = String.join("", Collections.nCopies(Math.max(0, (int) Math.round((maxLineLength - name.length()) * 0.5)), " "));
+                leaderboard.append(text.replaceAll("%", blanks)).append("\n");
             }
 
-            String rank  = "#" + Levels.getRank(user, keys);
+            String rank  = "#" + Levels.getRank(user, uuidList);
             String level = String.valueOf(Levels.getLevel(user));
             int    xp    = Levels.getXp(user).intValue();
 
-            EmbedBuilder lb = new EmbedBuilder();
+            EmbedBuilder lb = new EmbedBuilder()
+                .setColor(Objects.requireNonNull(event.getGuild()).getSelfMember().getColor())
+                .setTitle(":trophy: **" + type.getAsString() + " EXP Leaderboard**")
 
-            lb.setColor(event.getGuild().getSelfMember().getColor());
-            lb.setTitle(":trophy: **" + type.getAsString() + " EXP Leaderboard**");
+                .addField("Ranking", leaderboard.toString(), false)
+                .addField(":small_orange_diamond: " + type.getAsString() + " Rank", rank, true)
+                .addField(":small_orange_diamond: Level", level, true)
+                .addField(":small_orange_diamond: Total EXP", String.valueOf(xp), true)
 
-            lb.addField("Ranking", leaderboard.toString(), false);
-            lb.addField(":small_orange_diamond: " + type.getAsString() + " Rank", rank, true);
-            lb.addField(":small_orange_diamond: Level", level, true);
-            lb.addField(":small_orange_diamond: Total EXP", String.valueOf(xp), true);
-
-            lb.setFooter("Requested by " + user.getName(), user.getAvatarUrl());
-            lb.setTimestamp(Instant.now());
+                .setFooter("Requested by " + user.getName(), user.getAvatarUrl())
+                .setTimestamp(Instant.now());
 
             event.getHook().sendMessageEmbeds(lb.build()).queue();
         }
-    }
-
-    public static String addBlank(int number) {
-        return String.join("", Collections.nCopies(Math.max(0, number), " "));
     }
 }

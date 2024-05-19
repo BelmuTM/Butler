@@ -1,7 +1,6 @@
 package com.belmu.butler.commands.levels;
 
 import com.belmu.butler.Butler;
-import com.belmu.butler.DataParser;
 import com.belmu.butler.level.Levels;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.User;
@@ -17,22 +16,20 @@ public class DailyCommand extends ListenerAdapter {
     public String cmdName = "daily";
     public String cmdDescription = "Claims your daily EXP (50xp/day)";
 
+    private final String dailiesDataPath = "src/main/java/com/belmu/butler/data/dailies_data.json";
+    private final JSONObject dailiesData = (JSONObject) Butler.dataParser.readJSON(dailiesDataPath);
+
     private final long dayMs = 86400000; // 24 hours in milliseconds
 
     @Override
     public void onSlashCommandInteraction(@NotNull SlashCommandInteractionEvent event) {
-        String cmd  = event.getName();
-        User   user = event.getUser();
+        User user = event.getUser();
 
-        if (cmd.equals(cmdName)) {
+        if (event.getName().equals(cmdName)) {
             event.deferReply(true).queue();
 
-            Object dailyObject = Butler.data.get("daily");
-
-            if (!dailyObject.toString().isEmpty()) {
-                JSONObject userDailies = (JSONObject) dailyObject;
-
-                long timestamp = Long.parseLong(userDailies.get(user.getId()).toString());
+            if (dailiesData.get(user.getId()) != null) {
+                long timestamp = Long.parseLong(dailiesData.get(user.getId()).toString());
                 long timeLeft  = timestamp - System.currentTimeMillis();
 
                 if(timeLeft > 0) {
@@ -51,11 +48,8 @@ public class DailyCommand extends ListenerAdapter {
                 }
             }
 
-            JSONObject userTimestamp = new JSONObject();
-            userTimestamp.put(user.getId(), (System.currentTimeMillis() + dayMs));
-
-            Butler.data.put("daily", userTimestamp);
-            DataParser.writeJSON(Butler.dataPath, Butler.data);
+            dailiesData.put(user.getId(), System.currentTimeMillis() + dayMs);
+            Butler.dataParser.writeJSON(dailiesDataPath, dailiesData);
 
             Levels.addExp(user, 50D);
 

@@ -24,17 +24,16 @@ public class CalcCommand extends ListenerAdapter {
 
     @Override
     public void onSlashCommandInteraction(@NotNull SlashCommandInteractionEvent event) {
-        String cmd    = event.getName();
         Member member = event.getMember();
         User   user   = event.getUser();
 
-        if(cmd.equals(cmdName)) {
+        if(event.getName().equals(cmdName)) {
             event.deferReply().queue();
 
-            Double level  = Objects.requireNonNull(event.getOption("level")).getAsDouble();
-            Double xpFor  = Levels.calcXpForLevel(level);
-            Double xpFrom = Levels.calcXpForLevel(level - 1);
-            Double xpGap  = xpFor - xpFrom;
+            int    level  = Objects.requireNonNull(event.getOption("level")).getAsInt();
+            Double xpFor  = Levels.calculateXp(level);
+            Double xpFrom = Levels.calculateXp(level - 1);
+            int    xpGap  = (int) (xpFor - xpFrom);
 
             EmbedBuilder calc = new EmbedBuilder();
 
@@ -43,8 +42,8 @@ public class CalcCommand extends ListenerAdapter {
 
             calc.addField(
                     ":man_teacher: **XP calculator**",
-                    ":small_orange_diamond: Needed for lvl **" + level.intValue() + "** ⟶ `" + xpFor.intValue() + "`\n"
-                     + ":small_orange_diamond: Needed from lvl **" + (level.intValue() - 1) + "** to lvl **" + level.intValue() + "** ⟶ `" + xpGap.intValue() + "`",
+                    ":small_orange_diamond: Needed for lvl **" + level + "** ⟶ `" + xpFor.intValue() + "`\n"
+                     + ":small_orange_diamond: Needed from lvl **" + (level - 1) + "** to lvl **" + level + "** ⟶ `" + xpGap + "`",
                     true);
 
             calc.setFooter("Requested by " + member.getEffectiveName(), user.getAvatarUrl());

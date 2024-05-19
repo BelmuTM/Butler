@@ -1,29 +1,67 @@
 package com.belmu.butler.level;
 
+import com.belmu.butler.Butler;
+import com.google.gson.reflect.TypeToken;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.User;
+import org.json.simple.JSONObject;
 
+import java.lang.reflect.Type;
 import java.util.*;
 
 public class Levels {
 
-    public static LinkedHashMap<String, Double> sortedRanking = new LinkedHashMap<>();
+    public static final String xpDataPath = "src/main/java/com/belmu/butler/data/xp_data.json";
 
-    public static void setLevel(User user, double value) {
-        LevelConfig.xpMap.put(user.getId(), calcXpForLevel(value));
+    public static Map<String, Double>           globalXp      = new HashMap<>();
+    public static LinkedHashMap<String, Double> globalRanking = new LinkedHashMap<>();
+
+    public static void retrieveXpBackup() {
+        long processStart = System.currentTimeMillis();
+
+        JSONObject xpData = (JSONObject) Butler.dataParser.readJSON(xpDataPath);
+
+        Type type = new TypeToken<Map<String, Double>>(){}.getType();
+        globalXp = Butler.dataParser.gson.fromJson(xpData.toString(), type);
+
+        globalXp.entrySet()
+                .stream()
+                .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
+                .forEachOrdered(x -> globalRanking.put(x.getKey(), x.getValue()));
+
+        System.out.println("[INFO] Retrieved levels backup in " + (System.currentTimeMillis() - processStart) + "ms.");
+    }
+
+    public static void backupXp() {
+        Butler.dataParser.writeJSON(xpDataPath, globalXp);
+    }
+
+    public static void startXpBackupRoutine() {
+        Timer timer = new Timer();
+        timer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                backupXp();
+                System.out.println("[INFO] Saved levels backup on " + new java.util.Date());
+            }
+        }, 0L, 600000L); // 10 minutes
+    }
+
+    public static void setLevel(User user, int value) {
+        globalXp.put(user.getId(), calculateXp(value));
     }
 
     public static int getLevel(User user) {
-        return calculateLevel(LevelConfig.xpMap.computeIfAbsent(user.getId(), k -> 0D));
+        return calculateLevel(globalXp.computeIfAbsent(user.getId(), k -> 0D));
     }
 
     public static void setXp(User user, double value) {
-        LevelConfig.xpMap.put(user.getId(), value);
+        globalXp.put(user.getId(), value);
     }
 
     public static Double getXp(User user) {
-        return LevelConfig.xpMap.computeIfAbsent(user.getId(), k -> 0D);
+        return globalXp.computeIfAbsent(user.getId(), k -> 0D);
     }
 
     public static void addExp(User user, double value) {
@@ -31,33 +69,16 @@ public class Levels {
         setXp(user, xp + value);
     }
 
-    private static final double BASE_XP = 100;
+    private static final double BASE_XP  = 100;
     private static final double EXPONENT = 1.36f;
 
-    public static double calcXpForLevel(double level) {
+    public static double calculateXp(int level) {
         return (level == 0 ? 0 : BASE_XP) + (75 * Math.pow(level, EXPONENT));
     }
 
-    private static double calculateFullTargetXp(double level) {
-        double requiredXP = 0;
-        for (int i = 0; i <= level; i++) requiredXP += calcXpForLevel(i);
-        return requiredXP;
-    }
-
-    private static int calculateLevel(double xp) {
-        int level = 0;
-        double maxXp = calcXpForLevel(0);
-
-        do {
-            maxXp += calcXpForLevel(++level);
-        } while (maxXp < xp);
-
-        return level;
-    }
-
-    public static boolean hasPassedLevel(User user) {
-        double nextLevel = getLevel(user) + 1D;
-        return getXp(user) >= calcXpForLevel(nextLevel);
+    public static int calculateLevel(double xp) {
+        if(xp < BASE_XP) return 0;
+        else             return (int) Math.floor(Math.pow((xp - BASE_XP) / 75, 1.0 / EXPONENT));
     }
 
     public static LinkedHashMap<String, Double> getGuildSortedRanking(Guild guild) {
@@ -75,10 +96,7 @@ public class Levels {
         return sorted;
     }
 
-    public static int getRank(User user, List keys) throws NullPointerException {
-        for (int i = 0; i < keys.size(); i++) {
-            if (keys.get(i).toString().equals(user.getId())) return i + 1;
-        }
-        throw new NullPointerException();
+    public static int getRank(User user, ArrayList<String> uuidList) {
+        return uuidList.indexOf(user.getId()) + 1;
     }
 }

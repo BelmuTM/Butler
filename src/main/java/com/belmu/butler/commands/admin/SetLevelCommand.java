@@ -21,9 +21,8 @@ public class SetLevelCommand extends ListenerAdapter {
                     return;
                 }
 
-                double level = Double.parseDouble(args[2]);
+                int level = Integer.parseInt(args[2]);
                 Levels.setLevel(user, level);
-                Levels.setXp(user, Levels.calcXpForLevel(level));
 
                 event.getChannel().sendMessage(":white_check_mark: Successfully set " + user.getAsTag() + "'s Level to `" + level + "`").queue();
             }

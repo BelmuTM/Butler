@@ -15,7 +15,6 @@ public class PingCommand extends ListenerAdapter {
     public void onSlashCommandInteraction(@NotNull SlashCommandInteractionEvent event) {
         if(event.getName().equals(cmdName)) {
             event.deferReply().queue();
-
             event.getHook().sendMessage("Pong! :ping_pong: ").queue(
                     (message) -> message.editMessageFormat(":satellite: **Ping**: `%sms`", event.getJDA().getGatewayPing()).queueAfter(85, TimeUnit.MILLISECONDS)
             );

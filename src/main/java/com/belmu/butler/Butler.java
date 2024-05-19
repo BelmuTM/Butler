@@ -8,7 +8,7 @@ import com.belmu.butler.commands.levels.RankCommand;
 import com.belmu.butler.commands.levels.TopCommand;
 import com.belmu.butler.commands.music.*;
 import com.belmu.butler.level.GainExpEvent;
-import com.belmu.butler.level.LevelConfig;
+import com.belmu.butler.level.Levels;
 import com.sedmelluq.discord.lavaplayer.jdaudp.NativeAudioSendFactory;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
@@ -24,7 +24,6 @@ import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.utils.MemberCachePolicy;
 import org.apache.hc.core5.http.ParseException;
 import org.jetbrains.annotations.NotNull;
-import org.json.simple.JSONObject;
 import se.michaelthelin.spotify.SpotifyApi;
 import se.michaelthelin.spotify.exceptions.SpotifyWebApiException;
 import se.michaelthelin.spotify.model_objects.credentials.ClientCredentials;
@@ -36,9 +35,9 @@ import java.util.concurrent.TimeUnit;
 
 public class Butler extends ListenerAdapter {
 
-    public static final String dataPath = "src/main/java/com/belmu/butler/data/data.json";
-    public static JSONObject data = (JSONObject) DataParser.readJSON(dataPath);
     public static boolean ready = false;
+
+    public static DataParser dataParser = new DataParser();
 
     public static final int deleteTime = 25;
     public static final TimeUnit unit = TimeUnit.SECONDS;
@@ -74,22 +73,6 @@ public class Butler extends ListenerAdapter {
     };
 
     public static JDA jda;
-    public static SpotifyApi spotifyApi = new SpotifyApi.Builder()
-            .setClientId(Credentials.spotifyClientId)
-            .setClientSecret(Credentials.spotifyClientSecret)
-            .build();
-
-    private static final ClientCredentialsRequest clientCredentialsRequest = spotifyApi.clientCredentials().build();
-
-    public static void clientCredentialsSync() {
-        try {
-            final ClientCredentials clientCredentials = clientCredentialsRequest.execute();
-            clientCredentials.builder().setExpiresIn(999999999);
-            spotifyApi.setAccessToken(clientCredentials.getAccessToken());
-        } catch (IOException | SpotifyWebApiException | ParseException e) {
-            e.printStackTrace();
-        }
-    }
 
     public static void main(String[] args) throws InterruptedException {
         JDABuilder builder = JDABuilder
@@ -104,29 +87,13 @@ public class Butler extends ListenerAdapter {
         jda.addEventListener(listeners);
         jda.awaitReady();
 
-        clientCredentialsSync();
+        Credentials.clientCredentialsSync();
     }
 
     @Override
     public void onReady(@NotNull ReadyEvent event) {
-        JSONObject out = data == null ? new JSONObject() : data;
-        out.putIfAbsent("level", "");
-        out.putIfAbsent("xp"   , "");
-        out.putIfAbsent("daily", "");
-        data = out;
-        DataParser.writeJSON(dataPath, out);
-
-        LevelConfig.retrieveBackup();
-
-        Timer timer = new Timer();
-        timer.schedule(new TimerTask() {
-            @Override
-            public void run() {
-                LevelConfig.backupLevels();
-                System.out.println("[INFO] Saved levels backup on " + new java.util.Date());
-            }
-        }, 0L, 600000L); // 10 minutes
-
+        Levels.retrieveXpBackup();
+        Levels.startXpBackupRoutine();
         ready = true;
     }
 
